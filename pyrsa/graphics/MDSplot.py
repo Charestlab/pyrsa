@@ -5,7 +5,8 @@ from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 
 
-def MDSplot(similarities, pos):
+def MDSplot(rdm, pos):
+	similarities = rdm.square
 	fig = plt.figure(1)
 	ax = plt.axes([0., 0., 1., 1.])
 
@@ -27,5 +28,7 @@ def MDSplot(similarities, pos):
 #	lc.set_array(similarities.flatten())
 #	lc.set_linewidths(0.5 * np.ones(len(segments)))
 #	ax.add_collection(lc)
-
+	for s in range(len(rdm.labels)):
+		plt.annotate(rdm.labels[s], xy = (pos[s, 0], pos[s, 1]), xytext = (-20, 20),
+			textcoords = 'offset points')
 	plt.show()
