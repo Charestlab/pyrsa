@@ -2,14 +2,20 @@
 # -*- coding: UTF-8 -*-
 import matplotlib.pyplot as plt
 import numpy as np
+from imagesAsTickMarks import imagesAsTickMarks
 
 def showRDM(rdm, save=False):
-    plt.matshow(rdm.square)
-    plt.title(rdm.name)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.matshow(rdm.square)
+    ax.set_title(rdm.name)
+    #imagesAsTickMarks(ax, rdm.images)
     plt.yticks(np.arange(len(rdm.labels)), rdm.labels, size=8)
     plt.xticks(np.arange(len(rdm.labels)), rdm.labels, size=8, rotation=90)
     if save:
-        plt.savefig(rdm.name.replace(' ','_')+'.png')
+        fname = rdm.name.replace(' ','_')+'.png'
+        print('Saving '+fname)
+        plt.savefig(fname)
         plt.close()
     else:
-        show()
+        plt.show()
