@@ -8,7 +8,7 @@ def showRDM(rdm, save=False):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.matshow(rdm.square)
-    ax.set_title(rdm.name)
+    #ax.set_title(rdm.name, y=-.2)
     #imagesAsTickMarks(ax, rdm.images)
     plt.yticks(np.arange(len(rdm.labels)), rdm.labels, size=8)
     plt.xticks(np.arange(len(rdm.labels)), rdm.labels, size=8, rotation=90)

@@ -13,7 +13,7 @@ def MDSplot(rdm, pos, save=False):
     ax = plt.axes([0., 0., 1., 1.]) #
 
     
-    plt.scatter(pos[:, 0], pos[:, 1])
+    plt.scatter(pos[:, 0], pos[:, 1], s=0)
 
     if not hasattr(rdm, 'images'):
         for s in range(len(rdm.labels)):
