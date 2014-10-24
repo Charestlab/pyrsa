@@ -19,4 +19,6 @@ def secondorder(rdmlist):
 
 
 class RDM(object):
-    pass
+
+    def __init__(self, dissims=None):
+        self.square = dissims

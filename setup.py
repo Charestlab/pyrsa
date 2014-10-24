@@ -4,7 +4,7 @@
 from setuptools import setup, find_packages
 
 
-requires = []
+requires = ['numpy','scikit-learn']
 
 setup(name='pyrsa',
       version='0.0',
