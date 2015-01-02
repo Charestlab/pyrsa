@@ -3,6 +3,8 @@ pyrsa
 
 Python library for Representational Similarity Analysis
 
+[![DOI](https://zenodo.org/badge/7344/ilogue/pyrsa.svg)](http://dx.doi.org/10.5281/zenodo.13685)
+
 RSA ([Kriegeskorte et al 2008a](http://dx.doi.org/10.3389/neuro.06.004.2008), [2008b](http://dx.doi.org/10.1016/j.neuron.2008.10.043)) is an application of multi-variate pattern analysis (MVPA). The primary tool in RSA is the representational dissimilarity matrix (RDM); in which each entry reflects the dissimilarity between patterns associated with two stimuli. 
 
 See also the [MATLAB toolbox](http://www.mrc-cbu.cam.ac.uk/methods-and-resources/toolboxes/) ([Nili et al 2014](http://www.ploscompbiol.org/article/info%3Adoi%2F10.1371%2Fjournal.pcbi.1003553))
