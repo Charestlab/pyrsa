@@ -1,16 +1,17 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
 """
-function cols=RDMcolormap
-% this function provides a convenient colormap for visualizing
-% dissimilarity matrices. it goes from blue to yellow and has grey for
-% intermediate values.
-%__________________________________________________________________________
-% Copyright (C) 2012 Medical Research Council
+this function provides a convenient colormap for visualizing
+dissimilarity matrices. it goes from blue to yellow and has grey for
+intermediate values.
+
+authors: Ian Charest and Jasper van den Bosch
 """
 
 import numpy as np
 from skimage.color import rgb2hsv, hsv2rgb
 import matplotlib.pyplot as plt
-from colorScale import colorScale
+from pyrsa.graphics.colorScale import colorScale
 
 def RDMcolormap(nCols=256):
 
