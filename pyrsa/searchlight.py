@@ -3,8 +3,6 @@ import pandas as pd
 import os
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr
-# Command-line functions ------------------------------------------------------
-
 
 class RDMSearchLight():
     def __init__(self, mask, radius=1, thr=.7):
