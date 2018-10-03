@@ -9,9 +9,9 @@ img = nib.load('contrast_data.nii.gz')
 data = img.get_data()
 
 # initiate searchlight class (radius is in voxels, so be mindful)
-SL = RDMSearchLight(mask, radius=2, thr=1.0)
+SL = RSASearchLight(mask, radius=2, thr=1.0)
 SL.fit(data)
 
-# Save RDM 
+# Save RDM
 RDM_img = nib.Nifti1Image(SL.RDM, img.affine, img.header)
 nib.save(RDM_img, 'RDM_brain.nii.gz')
