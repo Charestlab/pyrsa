@@ -4,7 +4,8 @@ import os
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr
 
-class RDMSearchLight():
+
+class RSASearchLight():
     def __init__(self, mask, radius=1, thr=.7):
         """
         Parameters:
@@ -19,15 +20,11 @@ class RDMSearchLight():
         self.thr = thr
         self.centers = self._findCenters()
         self.RDM = None
+        self.NaNs = []
 
     def _findCenters(self):
-        """Find all indices from centers with usable voxels over threshold.
-
-        Parameters:
-            centers: list of center points to make searchlight around (defaults to all non-masked)
-            radius:  radius around each center (in voxels)
-            mask:    3d spatial mask (of usable voxels set to 1)
-            thr :    proportion of usable voxels necessary
+        """
+        Find all indices from centers with usable voxels over threshold.
         """
         # make centers a list of 3-tuple coords if not given
         centers = zip(*np.nonzero(self.mask))
@@ -35,7 +32,7 @@ class RDMSearchLight():
         good_center = []
         for center in centers:
             ind = self.searchlightInd(center)
-            if mask[ind].mean() >= self.thr:
+            if self.mask[ind].mean() >= self.thr:
                 good_center.append(center)
         return good_center
 
@@ -43,11 +40,7 @@ class RDMSearchLight():
         """Return indices for searchlight where distance < radius
 
         Parameters:
-            center: point around which to make searchlight
-            radius: radius of searchlight
-            shape:  shape of data
-            metric: distance metric to evaluate against radius
-
+            center: point around which to make searchlight sphere
         Returns:
             numpy array of shape (3, N_indices) for subsetting data
         """
@@ -68,8 +61,16 @@ class RDMSearchLight():
         data=np.vstack((X.ravel(),Y.ravel(),Z.ravel())).T
 
         distance= cdist(data, center.reshape(1,-1), 'euclidean').ravel()
-        return data[distance<self.radius].T.tolist()
 
+        return data[distance<self.radius].T.tolist()
+    def checkNaNs(X):
+        """
+        TODO - this function
+        """
+        pass
+        # nans = np.all(np.isnan(X), axis=0)[0]
+        # return X[:,~nans]
+    
     def fit(self, data, metric='correlation'):
         """
         Fit Searchlight for RDM
@@ -86,7 +87,8 @@ class RDMSearchLight():
 
         x, y, z = data.shape[:-1]
         rdm_size = data.shape[-1]
-        brain = np.zeros((x, y, z, rdm_size, rdm_size))
+        #brain = np.zeros((x, y, z, rdm_size, rdm_size))
+        rdms = []
         print('Runnning searchlight\n')
         for i, c in enumerate(self.centers):
             n_done = i/len(self.centers)*100
@@ -94,9 +96,13 @@ class RDMSearchLight():
                 print(f'{n_done:.0f}% done!', end='\r')
 
             # Get indices from center
-            ind = np.array(searchlightInd(c, radius, self.mask.shape))
+            ind = np.array(self.searchlightInd(c))
 
             X = np.mat([data[f[0], f[1], f[2], :] for f in ind.T]).T
-            brain[c[0], c[1], c[2], :, :] = cdist(X, X, metric)
+
+            # check for nans
+            rdms.append(cdist(X, X, 'correlation'))
+            #brain[c[0], c[1], c[2], :, :] = cdist(X, X, metric)
         print('\n')
-        self.RDM = brain
+        self.RDM = np.zeros((x, y, z, rdm_size, rdm_size))
+        self.RDM[centers[:, 0], centers[:, 1], centers[:, 2], ::] = rdms
