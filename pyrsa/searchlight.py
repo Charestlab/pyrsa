@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr
-from itertools import combinations
+
 def upper_tri_indexing(A):
     # returns the upper triangle
     m = A.shape[0]
@@ -108,6 +108,7 @@ class RSASearchLight():
 
         x, y, z = data.shape[:-1]
         rdm_size = data.shape[-1]
-        n_combs = len(list(combinations(np.arange(rdm_size), 2)))
+        # number of pairwise comparisons
+        n_combs = rdm_size*(rdm_size-1)/2
         self.RDM = np.zeros((x, y, z, n_combs))
         self.RDM[centers[:, 0], centers[:, 1], centers[:, 2], :] = distances
