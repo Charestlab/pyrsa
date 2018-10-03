@@ -3,7 +3,12 @@ import pandas as pd
 import os
 from scipy.spatial.distance import cdist
 from scipy.stats import spearmanr
-
+from itertools import combinations
+def upper_tri_indexing(A):
+    # returns the upper triangle
+    m = A.shape[0]
+    r,c = np.triu_indices(m,1)
+    return A[r,c]
 
 class RSASearchLight():
     def __init__(self, mask, radius=1, thr=.7):
@@ -41,8 +46,8 @@ class RSASearchLight():
 
         Parameters:
             center: point around which to make searchlight sphere
-        Returns:
-            numpy array of shape (3, N_indices) for subsetting data
+        Sets RDM variable to:
+            numpy array of shape (3, N_comparisons) for subsetting data
         """
         center = np.array(center)
         shape = self.mask.shape
@@ -51,18 +56,19 @@ class RSASearchLight():
         y = np.arange(shape[1])
         z = np.arange(shape[2])
 
-        #First mask the obvious points- may actually slow down your calculation depending.
-        x=x[abs(x-cx)<self.radius]
-        y=y[abs(y-cy)<self.radius]
-        z=z[abs(z-cz)<self.radius]
+        #First mask the obvious points
+        # - may actually slow down your calculation depending.
+        x = x[abs(x-cx)<self.radius]
+        y = y[abs(y-cy)<self.radius]
+        z = z[abs(z-cz)<self.radius]
 
         #Generate grid of points
-        X,Y,Z=np.meshgrid(x,y,z)
-        data=np.vstack((X.ravel(),Y.ravel(),Z.ravel())).T
-
-        distance= cdist(data, center.reshape(1,-1), 'euclidean').ravel()
+        X,Y,Z = np.meshgrid(x,y,z)
+        data = np.vstack((X.ravel(),Y.ravel(),Z.ravel())).T
+        distance = cdist(data, center.reshape(1,-1), 'euclidean').ravel()
 
         return data[distance<self.radius].T.tolist()
+
     def checkNaNs(X):
         """
         TODO - this function
@@ -70,7 +76,7 @@ class RSASearchLight():
         pass
         # nans = np.all(np.isnan(X), axis=0)[0]
         # return X[:,~nans]
-    
+
     def fit(self, data, metric='correlation'):
         """
         Fit Searchlight for RDM
@@ -84,11 +90,8 @@ class RSASearchLight():
                         'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean',
                         'wminkowski', 'yule'.
         """
-
-        x, y, z = data.shape[:-1]
-        rdm_size = data.shape[-1]
         #brain = np.zeros((x, y, z, rdm_size, rdm_size))
-        rdms = []
+        distances = []
         print('Runnning searchlight\n')
         for i, c in enumerate(self.centers):
             n_done = i/len(self.centers)*100
@@ -97,12 +100,14 @@ class RSASearchLight():
 
             # Get indices from center
             ind = np.array(self.searchlightInd(c))
+            X = np.array([data[f[0], f[1], f[2], :] for f in ind.T]).T
 
-            X = np.mat([data[f[0], f[1], f[2], :] for f in ind.T]).T
-
-            # check for nans
-            rdms.append(cdist(X, X, 'correlation'))
-            #brain[c[0], c[1], c[2], :, :] = cdist(X, X, metric)
+            dist = upper_tri_indexing(cdist(X, X, 'correlation'))
+            distances.append(dist)
         print('\n')
-        self.RDM = np.zeros((x, y, z, rdm_size, rdm_size))
-        self.RDM[centers[:, 0], centers[:, 1], centers[:, 2], ::] = rdms
+
+        x, y, z = data.shape[:-1]
+        rdm_size = data.shape[-1]
+        n_combs = len(list(combinations(np.arange(rdm_size), 2)))
+        self.RDM = np.zeros((x, y, z, n_combs))
+        self.RDM[centers[:, 0], centers[:, 1], centers[:, 2], :] = distances
