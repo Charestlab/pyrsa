@@ -31,7 +31,7 @@ class RSASearchLight():
         """
         Find all indices from centers with usable voxels over threshold.
         """
-        # make centers a list of 3-tuple coords if not given
+        # make centers a list of 3-tuple coords
         centers = zip(*np.nonzero(self.mask))
 
         good_center = []
@@ -39,7 +39,7 @@ class RSASearchLight():
             ind = self.searchlightInd(center)
             if self.mask[ind].mean() >= self.thr:
                 good_center.append(center)
-        return good_center
+        return np.array(good_center)
 
     def searchlightInd(self, center):
         """Return indices for searchlight where distance < radius
@@ -92,7 +92,7 @@ class RSASearchLight():
         """
         #brain = np.zeros((x, y, z, rdm_size, rdm_size))
         distances = []
-        print('Runnning searchlight\n')
+        print('Running searchlight')
         for i, c in enumerate(self.centers):
             n_done = i/len(self.centers)*100
             if i % 50 == 0:
@@ -109,6 +109,6 @@ class RSASearchLight():
         x, y, z = data.shape[:-1]
         rdm_size = data.shape[-1]
         # number of pairwise comparisons
-        n_combs = rdm_size*(rdm_size-1)/2
+        n_combs = rdm_size*(rdm_size-1) // 2
         self.RDM = np.zeros((x, y, z, n_combs))
-        self.RDM[centers[:, 0], centers[:, 1], centers[:, 2], :] = distances
+        self.RDM[self.centers[:, 0], self.centers[:, 1], self.centers[:, 2], :] = distances
