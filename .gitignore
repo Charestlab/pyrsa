@@ -1,6 +1,9 @@
 # Keep the matlab version out 
 matlab/
 
+# VS code settings
+.vscode/
+
 # Gedit autosave
 *~
 
