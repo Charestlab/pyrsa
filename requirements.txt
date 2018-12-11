@@ -1,5 +1,6 @@
 numpy
 scipy
 scikit-learn
-skimage
+scikit-image
 matplotlib
+tqdm
