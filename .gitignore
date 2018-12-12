@@ -1,3 +1,6 @@
+# movies
+*.mp4
+
 # VS code settings
 .vscode/
 

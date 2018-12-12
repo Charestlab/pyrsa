@@ -3,7 +3,7 @@ import itertools
 from tqdm import trange
 
 def rdm(x, labels, metric='correlation'):
-    rdm_lda_kfold(x, labels)
+    return rdm_lda_kfold(x, labels)
 
 def rdms(x, labels, metric='correlation'):
     nsamples, nfeatures, nmeasures = x.shape
