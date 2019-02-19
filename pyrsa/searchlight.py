@@ -1,14 +1,41 @@
 import numpy as np
-import pandas as pd
-import os
 from scipy.spatial.distance import cdist
-from scipy.stats import spearmanr
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
+from sklearn.preprocessing import StandardScaler
+from sklearn import svm
+from tqdm import tqdm
+from joblib import Parallel, delayed
+import pdb
+
 
 def upper_tri_indexing(A):
     # returns the upper triangle
     m = A.shape[0]
-    r,c = np.triu_indices(m,1)
-    return A[r,c]
+    r, c = np.triu_indices(m, 1)
+    return A[r, c]
+
+
+def run_per_center(data, c, labels):
+    # pdb.set_trace()
+    cv = KFold(n_splits=9)
+
+    classifier = svm.LinearSVC()
+
+    # Get indices from center
+    ind = np.array(c)
+    X = np.array(data[ind, :]).T
+    X = StandardScaler().fit_transform(X)
+    # pdb.set_trace()
+    score = np.mean(cross_val_score(classifier, X, labels, cv=cv, n_jobs=1))
+    return score
+
+
+def get_distance(data, c):
+    ind = np.array(c)
+    X = np.array(data[ind, :]).T
+    return upper_tri_indexing(cdist(X, X, 'correlation'))
+
 
 class RSASearchLight():
     def __init__(self, mask, radius=1, thr=.7):
@@ -24,6 +51,8 @@ class RSASearchLight():
         self.radius = radius
         self.thr = thr
         self.centers = self._findCenters()
+        self.centerIndices = self._findCenterIndices()
+        self.allIndices = self._allSphereIndices()
         self.RDM = None
         self.NaNs = []
 
@@ -41,6 +70,35 @@ class RSASearchLight():
                 good_center.append(center)
         return np.array(good_center)
 
+    def _findCenterIndices(self):
+        """
+        Find all subspace indices from centers
+        """
+        centerIndices = []
+        dims = self.mask.shape
+        for i, cen in enumerate(self.centers):
+            n_done = i/len(self.centers)*100
+            if i % 50 == 0:
+                print('Converting voxel coordinates of centers to subspace'
+                      f'indices {n_done:.0f}% done!', end='\r')
+            centerIndices.append(np.ravel_multi_index(np.array(cen), dims))
+        print('\n')
+        return np.array(centerIndices)
+
+    def _allSphereIndices(self):
+        allIndices = []
+        dims = self.mask.shape
+        for i, cen in enumerate(self.centers):
+            n_done = i/len(self.centers)*100
+            if i % 50 == 0:
+                print(f'Finding SearchLights {n_done:.0f}% done!', end='\r')
+
+            # Get indices from center
+            ind = np.array(self.searchlightInd(cen))           
+            allIndices.append(np.ravel_multi_index(np.array(ind), dims))
+        print('\n')
+        return allIndices
+
     def searchlightInd(self, center):
         """Return indices for searchlight where distance < radius
 
@@ -56,18 +114,18 @@ class RSASearchLight():
         y = np.arange(shape[1])
         z = np.arange(shape[2])
 
-        #First mask the obvious points
+        # First mask the obvious points
         # - may actually slow down your calculation depending.
-        x = x[abs(x-cx)<self.radius]
-        y = y[abs(y-cy)<self.radius]
-        z = z[abs(z-cz)<self.radius]
+        x = x[abs(x-cx) < self.radius]
+        y = y[abs(y-cy) < self.radius]
+        z = z[abs(z-cz) < self.radius]
 
-        #Generate grid of points
-        X,Y,Z = np.meshgrid(x,y,z)
-        data = np.vstack((X.ravel(),Y.ravel(),Z.ravel())).T
-        distance = cdist(data, center.reshape(1,-1), 'euclidean').ravel()
+        # Generate grid of points
+        X, Y, Z = np.meshgrid(x, y, z)
+        data = np.vstack((X.ravel(), Y.ravel(), Z.ravel())).T
+        distance = cdist(data, center.reshape(1, -1), 'euclidean').ravel()
 
-        return data[distance<self.radius].T.tolist()
+        return data[distance < self.radius].T.tolist()
 
     def checkNaNs(X):
         """
@@ -77,7 +135,7 @@ class RSASearchLight():
         # nans = np.all(np.isnan(X), axis=0)[0]
         # return X[:,~nans]
 
-    def fit(self, data, metric='correlation'):
+    def fit_rsa(self, data, metric='correlation'):
         """
         Fit Searchlight for RDM
         Parameters:
@@ -90,25 +148,55 @@ class RSASearchLight():
                         'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean',
                         'wminkowski', 'yule'.
         """
-        #brain = np.zeros((x, y, z, rdm_size, rdm_size))
-        distances = []
-        print('Running searchlight')
-        for i, c in enumerate(self.centers):
-            n_done = i/len(self.centers)*100
-            if i % 50 == 0:
-                print(f'{n_done:.0f}% done!', end='\r')
+        print('Running searchlight RSA')
 
-            # Get indices from center
-            ind = np.array(self.searchlightInd(c))
-            X = np.array([data[f[0], f[1], f[2], :] for f in ind.T]).T
+        # reshape the data to squish the first three dimensions
+        x, y, z, nobjects = data.shape
 
-            dist = upper_tri_indexing(cdist(X, X, 'correlation'))
-            distances.append(dist)
-        print('\n')
+        # now the first dimension of data is directly indexable by
+        # subspace index of the searchlight centers
+        data = data.reshape((x*y*z, nobjects))
 
-        x, y, z = data.shape[:-1]
-        rdm_size = data.shape[-1]
+        # test get_distance()
+        # for x in self.allIndices:
+        #    t = get_distance(data, x)
+        # test passed.
+
+        # brain = np.zeros((x, y, z, rdm_size, rdm_size))
+        distances = Parallel(n_jobs=4)(
+            delayed(get_distance)(
+                data, x) for x in tqdm(self.allIndices))
+
         # number of pairwise comparisons
-        n_combs = rdm_size*(rdm_size-1) // 2
-        self.RDM = np.zeros((x, y, z, n_combs))
-        self.RDM[self.centers[:, 0], self.centers[:, 1], self.centers[:, 2], :] = distances
+        n_combs = nobjects*(nobjects-1) // 2
+        self.RDM = np.zeros((x*y*z, n_combs))        
+        self.RDM[list(self.centerIndices), :] = distances
+        self.RDM = self.RDM.reshape((x, y, z, n_combs))
+
+    def fit_mvpa(self, data, labels):
+            """
+            Fit Searchlight for MVPA
+            Parameters:
+                data:       4D numpy array - (x, y, z, condition vols)
+                labels:     classifier labels
+
+            """
+            print('Running searchlight Decoding')
+            x, y, z, nobjects = data.shape
+            # now the first dimension of data is directly indexable by
+            # subspace index of the searchlight centers
+            data = data.reshape((x*y*z, nobjects))
+
+            # test run_per_center
+            # for x in self.allIndices:
+            #     t = run_per_center(data, x, labels)
+
+            scores = Parallel(n_jobs=6)(
+                delayed(run_per_center)(
+                    data, x, labels) for x in tqdm(self.allIndices))
+            
+            print('\n')
+
+            self.MVPA = np.zeros((x*y*z))
+            self.MVPA[list(self.centerIndices)] = scores
+            self.MVPA = self.MVPA.reshape((x, y, z))
