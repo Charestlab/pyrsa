@@ -8,10 +8,17 @@ mask = nib.load('binary_mask.nii.gz').get_data()
 img = nib.load('contrast_data.nii.gz')
 data = img.get_data()
 
+conditionlabels = [1, 1, 1, 2, 2, 2] #...
+
 # initiate searchlight class (radius is in voxels, so be mindful)
 SL = RSASearchLight(mask, radius=2, thr=1.0)
-SL.fit(data)
+
+# Get searchlight RDMs
+SL.fit_rsa(data)
 
 # Save RDM
 RDM_img = nib.Nifti1Image(SL.RDM, img.affine, img.header)
 nib.save(RDM_img, 'RDM_brain.nii.gz')
+
+# Get searchlight decoding
+SL.fit_mvpa(data, conditionlabels)
