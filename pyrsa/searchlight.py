@@ -3,6 +3,7 @@ from scipy.spatial.distance import cdist
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
 from sklearn import svm
 from tqdm import tqdm
 from joblib import Parallel, delayed
@@ -20,14 +21,14 @@ def run_per_center(data, c, labels):
     # pdb.set_trace()
     cv = KFold(n_splits=9)
 
-    classifier = svm.LinearSVC()
+    svc = svm.LinearSVC()
+    clf = make_pipeline(StandardScaler(), svc)
 
     # Get indices from center
     ind = np.array(c)
     X = np.array(data[ind, :]).T
-    X = StandardScaler().fit_transform(X)
     # pdb.set_trace()
-    score = np.mean(cross_val_score(classifier, X, labels, cv=cv, n_jobs=1))
+    score = np.mean(cross_val_score(clf, X, labels, cv=cv, n_jobs=1))
     return score
 
 
