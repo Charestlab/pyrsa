@@ -1,5 +1,8 @@
 import nibabel as nib
 from searchlight import *
+from pyrsa.utils import makeimagestack
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 # load 3d binary brain mask
 mask = nib.load('binary_mask.nii.gz').get_data()
@@ -22,3 +25,11 @@ nib.save(RDM_img, 'RDM_brain.nii.gz')
 
 # Get searchlight decoding
 SL.fit_mvpa(data, conditionlabels)
+
+fig_file = 'mvpa_results.png'
+m = makeimagestack(SL.MVPA)
+im = plt.imshow(m, cmap=cm.coolwarm)
+plt.colorbar()
+plt.axis('off')
+plt.savefig(fig_file, dpi=300, quality=95)
+plt.close()
