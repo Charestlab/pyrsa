@@ -1,13 +1,11 @@
 import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 from sklearn import svm
 from tqdm import tqdm
 from joblib import Parallel, delayed
-import pdb
 
 
 def upper_tri_indexing(A):
@@ -18,9 +16,6 @@ def upper_tri_indexing(A):
 
 
 def run_per_center(data, c, labels):
-    # pdb.set_trace()
-    cv = KFold(n_splits=9)
-
     svc = svm.LinearSVC()
     clf = make_pipeline(StandardScaler(), svc)
 
@@ -28,7 +23,7 @@ def run_per_center(data, c, labels):
     ind = np.array(c)
     X = np.array(data[ind, :]).T
     # pdb.set_trace()
-    score = np.mean(cross_val_score(clf, X, labels, cv=cv, n_jobs=1))
+    score = np.mean(cross_val_score(clf, X, labels, cv=9, n_jobs=1))
     return score
 
 
@@ -39,7 +34,7 @@ def get_distance(data, c):
 
 
 class RSASearchLight():
-    def __init__(self, mask, radius=1, thr=.7):
+    def __init__(self, mask, radius=1, thr=.7, njobs=1, verbose=False):
         """
         Parameters:
             mask:    3d spatial mask (of usable voxels set to 1)
@@ -48,7 +43,9 @@ class RSASearchLight():
                      thr = 1 means we don't accept centers with voxels outside
                      the brain
         """
+        self.verbose = verbose
         self.mask = mask
+        self.njobs = njobs
         self.radius = radius
         self.thr = thr
         self.centers = self._findCenters()
@@ -79,7 +76,7 @@ class RSASearchLight():
         dims = self.mask.shape
         for i, cen in enumerate(self.centers):
             n_done = i/len(self.centers)*100
-            if i % 50 == 0:
+            if i % 50 == 0 and self.verbose is True:
                 print('Converting voxel coordinates of centers to subspace'
                       f'indices {n_done:.0f}% done!', end='\r')
             centerIndices.append(np.ravel_multi_index(np.array(cen), dims))
@@ -91,7 +88,7 @@ class RSASearchLight():
         dims = self.mask.shape
         for i, cen in enumerate(self.centers):
             n_done = i/len(self.centers)*100
-            if i % 50 == 0:
+            if i % 50 == 0 and self.verbose is True:
                 print(f'Finding SearchLights {n_done:.0f}% done!', end='\r')
 
             # Get indices from center
@@ -164,13 +161,17 @@ class RSASearchLight():
         # test passed.
 
         # brain = np.zeros((x, y, z, rdm_size, rdm_size))
-        distances = Parallel(n_jobs=4)(
-            delayed(get_distance)(
-                data, x) for x in tqdm(self.allIndices))
-
+        if self.verbose is True:
+            distances = Parallel(n_jobs=self.njobs)(
+                delayed(get_distance)(
+                    data, x) for x in tqdm(self.allIndices))
+        else:
+            distances = Parallel(n_jobs=self.njobs)(
+                delayed(get_distance)(
+                    data, x) for x in self.allIndices)
         # number of pairwise comparisons
         n_combs = nobjects*(nobjects-1) // 2
-        self.RDM = np.zeros((x*y*z, n_combs))        
+        self.RDM = np.zeros((x*y*z, n_combs))
         self.RDM[list(self.centerIndices), :] = distances
         self.RDM = self.RDM.reshape((x, y, z, n_combs))
 
@@ -192,10 +193,15 @@ class RSASearchLight():
             # for x in self.allIndices:
             #     t = run_per_center(data, x, labels)
 
-            scores = Parallel(n_jobs=6)(
-                delayed(run_per_center)(
-                    data, x, labels) for x in tqdm(self.allIndices))
-            
+            if self.verbose is True:
+                scores = Parallel(n_jobs=self.njobs)(
+                    delayed(run_per_center)(
+                        data, x, labels) for x in tqdm(self.allIndices))
+            else:
+                scores = Parallel(n_jobs=self.njobs)(
+                    delayed(run_per_center)(
+                        data, x, labels) for x in self.allIndices)
+
             print('\n')
 
             self.MVPA = np.zeros((x*y*z))
