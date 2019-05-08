@@ -2,7 +2,8 @@
 # -*- coding: UTF-8 -*-
 import matplotlib.pyplot as plt
 import numpy as np
-from imagesAsTickMarks import imagesAsTickMarks
+#from pyrsa.graphics.imagesAsTickMarks import imagesAsTickMarks
+
 
 def showRDM(rdm, save=False):
     fig = plt.figure()
@@ -13,7 +14,7 @@ def showRDM(rdm, save=False):
     plt.yticks(np.arange(len(rdm.labels)), rdm.labels, size=8)
     plt.xticks(np.arange(len(rdm.labels)), rdm.labels, size=8, rotation=90)
     if save:
-        fname = rdm.name.replace(' ','_')+'.png'
+        fname = rdm.name.replace(' ', '_')+'.png'
         print('Saving '+fname)
         plt.savefig(fname)
         plt.close()
