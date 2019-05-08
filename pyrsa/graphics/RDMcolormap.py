@@ -12,6 +12,7 @@ import numpy as np
 from skimage.color import rgb2hsv, hsv2rgb
 import matplotlib.pyplot as plt
 from pyrsa.graphics.colorScale import colorScale
+from matplotlib.colors import ListedColormap
 
 
 def RDMcolormap(nCols=256):
@@ -38,4 +39,4 @@ def RDMcolormap(nCols=256):
 
     cols = colorScale(nCols, anchorCols)
 
-    return cols
+    return ListedColormap(cols)
