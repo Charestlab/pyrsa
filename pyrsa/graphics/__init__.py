@@ -1,1 +1,1 @@
-from showRDM import showRDM as show
+from pyrsa.graphics.showRDM import showRDM as show
