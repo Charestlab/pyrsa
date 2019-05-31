@@ -13,12 +13,20 @@ def mds(utv):
     seed = numpy.random.RandomState(seed=3)
     mds = MDS(n_components=2, max_iter=3000, eps=1e-9, random_state=seed,
                    dissimilarity="precomputed", n_jobs=1)
-    pos = mds.fit(rdm).embedding_
+    pos = mds.fit_transform(rdm)
 
     # rescale
     #pos *= sqrt((X_true ** 2).sum()) / sqrt((pos ** 2).sum())
 
+
+   # Y = mds.fit_transform(RDM)
+#    if itime == 0:
+#        Y = mds.fit_transform(RDM)
+#    else:
+#        d, Y, _ = procrustes(
+#            Y, mds.fit_transform(RDM), scaling=False)
+
     # Rotate the data
-    clf = PCA(n_components=2)
-    pos = clf.fit_transform(pos)
+    # clf = PCA(n_components=2)
+    # pos = clf.fit_transform(pos)
     return pos
