@@ -8,7 +8,10 @@
 """
 
 from sklearn.preprocessing import MinMaxScaler
+from scipy.stats import rankdata
 scaler = MinMaxScaler()
+
+
 def rankTransformRDM(rdm):
     shape = rdm.shape
     rdm_ranks = rankdata(rdm)
